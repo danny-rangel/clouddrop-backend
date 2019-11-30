@@ -44,8 +44,8 @@ const upload = multer({
 module.exports = app => {
     // Get all images for logged in user
     app.get('/api/images', requireLogin, async (req, res) => {
-        const { user } = req;
-        const images = await Image.find({ _user: user.id })
+        const { id } = req.user;
+        const images = await Image.find({ _user: id })
             .sort({ date: -1 })
             .limit(20);
 
@@ -64,7 +64,8 @@ module.exports = app => {
         const object = await s3.getObject(getParams).promise();
 
         // DECRYPTION WILL HAPPEN HERE
-        res.send(decrypt(object.Body.toString('base64')));
+        const decryptedBuffer = decrypt(object.Body.toString('base64'));
+        res.send(decryptedBuffer);
     });
 
     // Image upload
@@ -74,6 +75,7 @@ module.exports = app => {
         upload.single('newImage'),
         async (req, res) => {
             const { _id, name, email } = req.user;
+            const { originalname } = req.file;
 
             const buffer = await sharp(req.file.buffer)
                 .resize({ width: 500, height: 500 })
@@ -82,7 +84,7 @@ module.exports = app => {
 
             try {
                 const type = fileType(buffer);
-                const fileName = `${req.file.originalname
+                const fileName = `${originalname
                     .split('.')
                     .slice(0, -1)
                     .join('.')}`;
@@ -114,8 +116,9 @@ module.exports = app => {
 
     // Image Deletion, with cascade of shared image deletion
     app.delete('/api/images', requireLogin, async (req, res) => {
-        const image = await Image.findOneAndDelete({ key: req.body.key });
-        await SharedImage.deleteMany({ key: req.body.key });
+        const { key } = req.body;
+        const image = await Image.findOneAndDelete({ key });
+        await SharedImage.deleteMany({ key });
         req.user.imageCount -= 1;
         await req.user.save();
         res.send(image);
