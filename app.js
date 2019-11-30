@@ -37,6 +37,6 @@ require('./routes/authRoutes')(app);
 require('./routes/userRoutes')(app);
 require('./routes/imageRoutes')(app);
 
-app.listen(8081, () => {
+app.listen(process.env.PORT || 8081, () => {
     console.log('Server is up on port 8081');
 });
