@@ -17,6 +17,8 @@ AWS.config.update({
 
 const s3 = new AWS.S3();
 
+// Upload functions
+
 const uploadFile = async (buffer, name, type) => {
     const params = {
         ACL: 'public-read',
@@ -64,8 +66,8 @@ module.exports = app => {
         const object = await s3.getObject(getParams).promise();
 
         // DECRYPTION WILL HAPPEN HERE
-        const decryptedBuffer = decrypt(object.Body.toString('base64'));
-        res.send(decryptedBuffer);
+        const decryptedBuffer = decrypt(object.Body);
+        res.send(decryptedBuffer.toString('base64'));
     });
 
     // Image upload
