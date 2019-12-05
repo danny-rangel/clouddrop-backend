@@ -65,7 +65,7 @@ module.exports = app => {
 
         const object = await s3.getObject(getParams).promise();
 
-        // DECRYPTION WILL HAPPEN HERE
+        // DECRYPT
         const decryptedBuffer = decrypt(object.Body);
         res.send(decryptedBuffer.toString('base64'));
     });
@@ -85,6 +85,7 @@ module.exports = app => {
                 .toBuffer();
 
             try {
+                // Grab information for S3 Upload
                 const type = fileType(buffer);
                 const fileName = `${originalname
                     .split('.')
@@ -92,11 +93,12 @@ module.exports = app => {
                     .join('.')}`;
                 const URL = `clouddrop/${fileName}`;
 
-                // THIS IS WHERE WE HAVE THE BUFFER
-                // WE SHOULD ENCRYPT HERE
+                // ENCRYPT HERE
                 const encryptedBuffer = encrypt(buffer);
 
+                // Upload
                 const data = await uploadFile(encryptedBuffer, URL, type);
+                //Create the document in the database
                 const image = new Image({
                     userId: _id,
                     email,
@@ -105,8 +107,8 @@ module.exports = app => {
                     key: fileName,
                     _user: req.user.id
                 });
-
                 await image.save();
+
                 req.user.imageCount += 1;
                 await req.user.save();
                 res.send(data);
